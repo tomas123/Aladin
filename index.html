@@ -2,35 +2,49 @@
 <html>
 <head>
 <title>Aladin + Northern Sky Narrowband Survey</title>
+
+<style>
+/* CSS Farbfilter für HSO / SHO */
+.swap120 #aladin-lite-div canvas {
+    filter: hue-rotate(120deg) saturate(1.0);
+}
+
+.swap240 #aladin-lite-div canvas {
+    filter: hue-rotate(240deg) saturate(1.0);
+}
+</style>
+
 </head>
 
-  <body>    
-    <!-- our code needs jQuery library -->
-<script type="text/javascript" src="https://code.jquery.com/jquery-3.7.1.min.js" charset="utf-8"></script>
+<body>    
 
-<!-- Aladin Lite container at requested dimensions -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
 <button id="toggleSimbad">SIMBAD ein / aus</button>
 
-<input id="halpha8" type="radio" name="survey" value="https://www.simg.de/nebulae3/dr0_2/halpha8" checked><label for="halpha8">H-alpha 8</label>
-<input id="oiii8" type="radio" name="survey" value="https://www.simg.de/nebulae3/dr0_2/oiii8"><label for="oiii8">Oiii 8</label>
-<input id="sii8" type="radio" name="survey" value="https://www.simg.de/nebulae3/dr0_2/sii8"><label for="sii8">Sii 8</label>
-<input id="halpha" type="radio" name="survey" value="https://www.simg.de/nebulae3/dr0_2/halpha"><label for="halpha">H-alpha 16</label>
-<input id="oiii" type="radio" name="survey" value="https://www.simg.de/nebulae3/dr0_2/oiii"><label for="oiii">Oiii 16</label>
-<input id="rgb8" type="radio" name="survey" value="https://www.simg.de/nebulae3/dr0_2/rgb8"><label for="rgb8">RGB 8</label>
-<input id="hbr8" type="radio" name="survey" value="https://www.simg.de/nebulae3/dr0_2/hbr8"><label for="hbr8">HBR 8</label>
-<input id="hbr8" type="radio" name="survey" value="https://www.simg.de/nebulae3/dr0_2/ohs8"><label for="hbr8">OHS 8</label>
-<input id="tc8" type="radio" name="survey" value="https://www.simg.de/nebulae3/dr0_1/tc8"><label for="tc8">TC 8</label>
-<input id="DSS" type="radio" name="survey" value="P/DSS2/color"><label for="DSS">DSS color</label>
-<input id="Mellinger" type="radio" name="survey" value="http://alasky.u-strasbg.fr/MellingerRGB"><label for="Mellinger">Mellinger</label>
+<!-- Survey-Auswahl -->
+<input type="radio" name="survey" value="https://www.simg.de/nebulae3/dr0_2/halpha8" checked> Ha 8
+<input type="radio" name="survey" value="https://www.simg.de/nebulae3/dr0_2/oiii8"> Oiii 8
+<input type="radio" name="survey" value="https://www.simg.de/nebulae3/dr0_2/sii8"> Sii 8
+<input type="radio" name="survey" value="https://www.simg.de/nebulae3/dr0_2/rgb8"> RGB 8
+<input type="radio" name="survey" value="https://www.simg.de/nebulae3/dr0_2/ohs8"> OHS 8
+<!-- Berechnete Presets -->
+<input type="radio" name="survey" value="SOH"> SOH 8
+<input type="radio" name="survey" value="HSO"> HSO 8
 
-<div id="aladin-lite-div" style="width: 100vw; height: 95vh"></div>
+<input type="radio" name="survey" value="https://www.simg.de/nebulae3/dr0_1/tc8"> TC 8
+<input type="radio" name="survey" value="P/DSS2/color"> DSS color
+<input type="radio" name="survey" value="http://alasky.u-strasbg.fr/MellingerRGB"> Mellinger
+<input type="radio" name="survey" value="https://www.simg.de/nebulae3/dr0_2/halpha"> Ha 16
+<input type="radio" name="survey" value="https://www.simg.de/nebulae3/dr0_2/oiii"> Oiii 16
 
-<!-- Aladin Lite JS code -->
-<script type="text/javascript" src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8"></script>
+<div id="aladin-lite-div" style="width:100vw;height:95vh"></div>
 
-<!-- Creation of Aladin Lite instance with initial parameters -->
-<script type="text/javascript">
+<script src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js"></script>
+
+<script>
 let aladin;
+let simbad;
 
 A.init.then(() => {
 
@@ -45,45 +59,45 @@ A.init.then(() => {
         showCooGrid: false
     });
 
-    //This filter function is being passed a Source object and must return true if the source must be shown, false otherwise.
     function deepSkyFilter(obj) {
-        //if (!obj.data || !obj.data.main_id) return false;
+        if (!obj.data || !obj.data.main_id) return false;
         const name = obj.data.main_id;
-        //M 31 NGC 7000 usw
-        return /^(M\s*\d+|NGC\s*\d+|IC\s*\d+|SNR\s*|SH\s*)/i.test(name);
+        return /^(M\s*\d+|NGC\s*\d+|IC\s*\d+|SNR|SH)/i.test(name);
     }
 
-    let simbad = A.catalogHiPS(
+    simbad = A.catalogHiPS(
         'https://hipscat.cds.unistra.fr/HiPSCatService/Simbad',
-        {
-            name: 'Deep Sky Objects',
-            color: 'cyan',
-            onClick: 'showTable',
-            filter: deepSkyFilter
-        }
+        { name: 'Deep Sky Objects', color: 'cyan', onClick: 'showTable', filter: deepSkyFilter }
     );
 
-    // Ein/Aus-Schalter
     let simbadVisible = false;
-
-    document.getElementById("toggleSimbad").onclick = function() {
+    document.getElementById("toggleSimbad").onclick = () => {
         simbadVisible = !simbadVisible;
-        if (simbadVisible) {
-            aladin.addCatalog(simbad);
-        } else {
-            aladin.removeLayers();
-        }
+        if (simbadVisible) aladin.addCatalog(simbad);
+        else aladin.removeLayers();
     };
 });
-</script>
 
-<script type="text/javascript">
-$(document).ready(function() {
-    $('input[name=survey]').change(function() {
-        aladin.setImageSurvey($(this).val());
-    });
+// Survey-Umschaltung inklusive HSO / SHO Farbfilter
+$('input[name=survey]').change(function() {
+    const val = $(this).val();
+
+    // Alle CSS-Klassen entfernen
+    document.body.classList.remove("swap120", "swap240");
+
+    if (val === "SOH") {
+        aladin.setImageSurvey("https://www.simg.de/nebulae3/dr0_2/ohs8");
+        document.body.classList.add("swap120");
+    } 
+    else if (val === "HSO") {
+        aladin.setImageSurvey("https://www.simg.de/nebulae3/dr0_2/ohs8");
+        document.body.classList.add("swap240");
+    } 
+    else {
+        aladin.setImageSurvey(val);
+    }
 });
 </script>
 
-  </body>
+</body>
 </html>
